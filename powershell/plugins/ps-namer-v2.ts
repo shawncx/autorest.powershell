@@ -127,7 +127,9 @@ async function tweakModel(state: State): Promise<PwshModel> {
 
     for (const schemaGroup of values(<Dictionary<Array<Schema>>><any>state.model.schemas)) {
       for (const schema of schemaGroup) {
-        const virtualProperties = [...allVirtualProperties(schema.language.csharp?.virtualProperties)];
+        const csharp = <any>schema.language.csharp;
+        const virtualProperties = [...allVirtualProperties(csharp?.virtualProperties)];
+        // const virtualProperties = [...allVirtualProperties(schema.language.csharp?.virtualProperties)];
 
         for (const property of virtualProperties) {
           let prevName = property.name;
@@ -140,7 +142,8 @@ async function tweakModel(state: State): Promise<PwshModel> {
           const singularName = singularize(property.name);
           if (prevName != singularName) {
             property.name = singularName;
-            state.message({ Channel: Channel.Debug, Text: `Sanitized property-name -> Changed property-name from ${prevName} to singular ${property.name} from model ${schema.language.csharp?.name}` });
+            state.message({ Channel: Channel.Debug, Text: `Sanitized property-name -> Changed property-name from ${prevName} to singular ${property.name} from model ${csharp?.name}` });
+            // state.message({ Channel: Channel.Debug, Text: `Sanitized property-name -> Changed property-name from ${prevName} to singular ${property.name} from model ${schema.language.csharp?.name}` });
           }
 
           // save the name again to compare in case it was modified
@@ -150,7 +153,8 @@ async function tweakModel(state: State): Promise<PwshModel> {
           // to reduce naming redundancy
           const sanitizedName = removeProhibitedPrefix(
             property.name,
-            schema.language.csharp?.name ? schema.language.csharp?.name : '',
+            csharp?.name ? csharp?.name : '',
+            // schema.language.csharp?.name ? schema.language.csharp?.name : '',
             otherPropertiesNames
           );
 
@@ -162,7 +166,7 @@ async function tweakModel(state: State): Promise<PwshModel> {
 
             // change name
             property.name = sanitizedName;
-            state.message({ Channel: Channel.Debug, Text: `Sanitized property-name -> Changed property-name from ${prevName} to ${property.name} from model ${schema.language.csharp?.name}` });
+            state.message({ Channel: Channel.Debug, Text: `Sanitized property-name -> Changed property-name from ${prevName} to ${property.name} from model ${(<any>schema.language.csharp)?.name}` });
             state.message({ Channel: Channel.Debug, Text: `                        -> And, added alias '${prevName}'` });
 
             // update shared properties too
@@ -192,9 +196,12 @@ async function tweakModel(state: State): Promise<PwshModel> {
 
   for (const schemaGroup of values(<Dictionary<Array<Schema>>><any>state.model.schemas)) {
     for (const schema of schemaGroup) {
-      const vp = schema.language.csharp?.virtualProperties;
+      const csharp = <any>schema.language.csharp;
+      const vp = csharp?.virtualProperties;
+      // const vp = schema.language.csharp?.virtualProperties;
       if (vp) {
-        resolvePropertyNames(schema.language.csharp?.name ? [schema.language.csharp?.name] : [], vp);
+        resolvePropertyNames(csharp?.name ? [csharp?.name] : [], vp);
+        // resolvePropertyNames(schema.language.csharp?.name ? [schema.language.csharp?.name] : [], vp);
       }
     }
   }

@@ -85,13 +85,13 @@ export class OperationMethod extends Method {
   protected callName: string;
 
   constructor(protected parent: Class, public operation: HttpOperation, public viaIdentity: boolean, protected state: State, objectInitializer?: DeepPartial<OperationMethod>) {
-    super(viaIdentity ? `${operation.details.csharp.name}ViaIdentity` : operation.details.csharp.name, System.Threading.Tasks.Task());
+    super(viaIdentity ? `${(<any>operation.details.csharp).name}ViaIdentity` : (<any>operation.details.csharp).name, System.Threading.Tasks.Task());
     this.apply(objectInitializer);
     this.async = Modifier.Async;
     this.returnsDescription = `A <see cref="${System.Threading.Tasks.Task()}" /> that will be complete when handling of the response is completed.`;
     const $this = this;
 
-    this.callName = `${operation.details.csharp.name}_Call`;
+    this.callName = `${(<any>operation.details.csharp).name}_Call`;
     this.push(Using('NoSynchronizationContext', ''));
 
     // add parameters
@@ -107,9 +107,9 @@ export class OperationMethod extends Method {
 
       const p = new OperationParameter(this, value, this.state.path('parameters', index));
 
-      if (value.details.csharp.constantValue) {
+      if ((<any>value.details.csharp).constantValue) {
         const constTd = state.project.modelsNamespace.resolveTypeDeclaration(value.schema, true, state);
-        p.defaultInitializer = constTd.deserializeFromString(KnownMediaType.UriParameter, new StringExpression(`${value.details.csharp.constantValue}`), toExpression(constTd.defaultOfType));
+        p.defaultInitializer = constTd.deserializeFromString(KnownMediaType.UriParameter, new StringExpression(`${(<any>value.details.csharp).constantValue}`), toExpression(constTd.defaultOfType));
       }
 
       // don't add path parameters  when we're in identity mode
@@ -123,7 +123,7 @@ export class OperationMethod extends Method {
       this.methodParameters.push(p);
     }
 
-    this.description = this.operation.details.csharp.description;
+    this.description = (<any>this.operation.details.csharp).description;
 
     // add body paramter if there should be one.
     if (this.operation.requestBody) {
@@ -140,7 +140,7 @@ export class OperationMethod extends Method {
         const responseType = response.schema ? state.project.modelsNamespace.resolveTypeDeclaration(<Schema>response.schema, true, state) : null;
         const headerType = response.headerSchema ? state.project.modelsNamespace.resolveTypeDeclaration(<Schema>response.headerSchema, true, state) : null;
 
-        const newCallbackParameter = new CallbackParameter(response.details.csharp.name, responseType, headerType, this.state, { description: response.details.csharp.description });
+        const newCallbackParameter = new CallbackParameter((<any>response.details.csharp).name, responseType, headerType, this.state, { description: (<any>response.details.csharp).description });
         this.addParameter(newCallbackParameter);
         this.callbacks.push(newCallbackParameter);
 
@@ -296,13 +296,13 @@ export class NewOperationMethod extends Method {
   protected callName: string;
 
   constructor(public parent: Class, public operation: Operation, public viaIdentity: boolean, protected state: NewState, objectInitializer?: DeepPartial<OperationMethod>) {
-    super(viaIdentity ? `${operation.language.csharp?.name}ViaIdentity` : operation.language.csharp?.name || '', System.Threading.Tasks.Task());
+    super(viaIdentity ? `${(<any>operation.language.csharp)?.name}ViaIdentity` : (<any>operation.language.csharp)?.name || '', System.Threading.Tasks.Task());
     this.apply(objectInitializer);
     this.async = Modifier.Async;
     this.returnsDescription = `A <see cref="${System.Threading.Tasks.Task()}" /> that will be complete when handling of the response is completed.`;
     const $this = this;
 
-    this.callName = `${operation.language.csharp?.name}_Call`;
+    this.callName = `${(<any>operation.language.csharp)?.name}_Call`;
     this.push(Using('NoSynchronizationContext', ''));
 
     // add parameters
@@ -322,9 +322,9 @@ export class NewOperationMethod extends Method {
       }
       const p = new NewOperationParameter(this, value, this.state.path('parameters', index));
 
-      if (value.language.csharp?.constantValue) {
+      if ((<any>value.language.csharp)?.constantValue) {
         const constTd = state.project.modelsNamespace.NewResolveTypeDeclaration(value.schema, true, state);
-        p.defaultInitializer = constTd.deserializeFromString(KnownMediaType.UriParameter, new StringExpression(`${value.language.csharp.constantValue}`), toExpression(constTd.defaultOfType));
+        p.defaultInitializer = constTd.deserializeFromString(KnownMediaType.UriParameter, new StringExpression(`${(<any>value.language.csharp).constantValue}`), toExpression(constTd.defaultOfType));
       }
 
       // don't add path parameters  when we're in identity mode
@@ -338,7 +338,7 @@ export class NewOperationMethod extends Method {
       this.methodParameters.push(p);
     }
 
-    this.description = this.operation.language.csharp?.description || '';
+    this.description = (<any>this.operation.language.csharp)?.description || '';
 
     // add body paramter if there should be one.
     // skip-for-time-being
@@ -357,7 +357,7 @@ export class NewOperationMethod extends Method {
       //skip-for-time-being
       //const headerType = response.headerSchema ? state.project.modelsNamespace.NewResolveTypeDeclaration(<Schema>response.headerSchema, true, state) : null;
       const headerType = null;
-      const newCallbackParameter = new NewCallbackParameter(response.language.csharp?.name || '', responseType, headerType, this.state, { description: response.language.csharp?.description });
+      const newCallbackParameter = new NewCallbackParameter((<any>response.language.csharp)?.name || '', responseType, headerType, this.state, { description: (<any>response.language.csharp)?.description });
       this.addParameter(newCallbackParameter);
       this.callbacks.push(newCallbackParameter);
 
@@ -518,8 +518,8 @@ export class NewOperationMethod extends Method {
 export class CallMethod extends Method {
   public returnNull = false;
   constructor(protected parent: Class, protected opMethod: OperationMethod, protected state: State, objectInitializer?: DeepPartial<OperationMethod>) {
-    super(`${opMethod.operation.details.csharp.name}_Call`, System.Threading.Tasks.Task());
-    this.description = `Actual wire call for <see cref="${opMethod.operation.details.csharp.name}" /> method.`;
+    super(`${(<any>opMethod.operation.details.csharp).name}_Call`, System.Threading.Tasks.Task());
+    this.description = `Actual wire call for <see cref="${(<any>opMethod.operation.details.csharp).name}" /> method.`;
     this.returnsDescription = opMethod.returnsDescription;
 
     this.apply(objectInitializer);
@@ -579,13 +579,13 @@ export class CallMethod extends Method {
         yield eventListener.signal(ClientRuntime.Events.ResponseCreated, response.value);
         const EOL = 'EOL';
         // LRO processing (if appropriate)
-        if ($this.opMethod.operation.details.csharp.lro) {
+        if ((<any>$this.opMethod.operation.details.csharp).lro) {
           yield '// this operation supports x-ms-long-running-operation';
           const originalUri = Local('_originalUri', new LiteralExpression(`${reqParameter.use}.RequestUri.AbsoluteUri`));
           yield originalUri;
 
-          yield `// declared final-state-via: ${$this.opMethod.operation.details.csharp.lro['final-state-via']}`;
-          const fsv = $this.opMethod.operation.details.csharp.lro['final-state-via'];
+          yield `// declared final-state-via: ${(<any>$this.opMethod.operation.details.csharp).lro['final-state-via']}`;
+          const fsv = (<any>$this.opMethod.operation.details.csharp).lro['final-state-via'];
           let finalUri: LocalVariable;
 
           switch (fsv) {
@@ -795,7 +795,7 @@ if( ${response.value}.StatusCode == ${System.Net.HttpStatusCode.OK})
       yield Switch('_contentType', function* () {
         for (const eachResponse of values(responses)) {
           const mimetype = length(eachResponse.mimeTypes) > 0 ? eachResponse.mimeTypes[0] : '';
-          const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === eachResponse.details.csharp.name);
+          const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === (<any>eachResponse.details.csharp).name);
 
           let count = length(eachResponse.mimeTypes);
           for (const mt of values(eachResponse.mimeTypes)) {
@@ -813,7 +813,7 @@ if( ${response.value}.StatusCode == ${System.Net.HttpStatusCode.OK})
       });
     } else {
       const response = responses[0];
-      const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === response.details.csharp.name);
+      const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === (<any>response.details.csharp).name);
       // all mimeTypes per for this response code.
       yield eventListener.signal(ClientRuntime.Events.BeforeResponseDispatch, '_response');
       yield $this.responseHandler(values(response.mimeTypes).first() || '', response, callbackParameter);
@@ -846,7 +846,7 @@ if( ${response.value}.StatusCode == ${System.Net.HttpStatusCode.OK})
       }
     }
     // make the callback with the appropriate parameters
-    yield `await ${eachResponse.details.csharp.name}(_response${callbackParameters.length === 0 ? '' : ','}${callbackParameters.joinWith(valueOf)});`;
+    yield `await ${(<any>eachResponse.details.csharp).name}(_response${callbackParameters.length === 0 ? '' : ','}${callbackParameters.joinWith(valueOf)});`;
   }
 
   public responseHandler(mimetype: string, eachResponse: NewResponse, callbackParameter: CallbackParameter) {
@@ -918,13 +918,13 @@ export class NewCallMethod extends Method {
         yield eventListener.signal(ClientRuntime.Events.ResponseCreated, response.value);
         const EOL = 'EOL';
         // LRO processing (if appropriate)
-        if ($this.opMethod.operation.language.csharp?.lro) {
+        if ((<any>$this.opMethod.operation.language.csharp)?.lro) {
           yield '// this operation supports x-ms-long-running-operation';
           const originalUri = Local('_originalUri', new LiteralExpression(`${reqParameter.use}.RequestUri.AbsoluteUri`));
           yield originalUri;
 
-          yield `// declared final-state-via: ${$this.opMethod.operation.language.csharp.lro['final-state-via']}`;
-          const fsv = $this.opMethod.operation.language.csharp.lro['final-state-via'];
+          yield `// declared final-state-via: ${(<any>$this.opMethod.operation.language.csharp).lro['final-state-via']}`;
+          const fsv = (<any>$this.opMethod.operation.language.csharp).lro['final-state-via'];
           let finalUri: LocalVariable;
 
           switch (fsv) {
@@ -1135,7 +1135,7 @@ if( ${response.value}.StatusCode == ${System.Net.HttpStatusCode.OK})
       yield Switch('_contentType', function* () {
         for (const eachResponse of values(responses)) {
           const mimetype = length(eachResponse.mimeTypes) > 0 ? eachResponse.mimeTypes[0] : '';
-          const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === eachResponse.details.csharp.name);
+          const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === (<any>eachResponse.details.csharp).name);
 
           let count = length(eachResponse.mimeTypes);
           for (const mt of values(eachResponse.mimeTypes)) {
@@ -1153,7 +1153,7 @@ if( ${response.value}.StatusCode == ${System.Net.HttpStatusCode.OK})
       });
     } else {
       const response = responses[0];
-      const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === response.details.csharp.name);
+      const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === (<any>response.details.csharp).name);
       // all mimeTypes per for this response code.
       yield eventListener.signal(ClientRuntime.Events.BeforeResponseDispatch, '_response');
       yield $this.responseHandler(values(response.mimeTypes).first() || '', response, callbackParameter);
@@ -1165,7 +1165,7 @@ if( ${response.value}.StatusCode == ${System.Net.HttpStatusCode.OK})
       yield Switch('_contentType', function* () {
         for (const eachResponse of values(responses)) {
           const mimetype = length(eachResponse.protocol.http?.mediaTypes) > 0 ? eachResponse.protocol.http?.mimeTypes[0] : '';
-          const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === eachResponse.language.csharp?.name);
+          const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === (<any>eachResponse.language.csharp)?.name);
 
           let count = length(eachResponse.protocol.http?.mediaTypes);
           for (const mt of values(eachResponse.protocol.http?.mediaTypes)) {
@@ -1183,7 +1183,7 @@ if( ${response.value}.StatusCode == ${System.Net.HttpStatusCode.OK})
       });
     } else {
       const response = responses[0];
-      const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === response.language.csharp?.name);
+      const callbackParameter = <CallbackParameter>values(opMethod.callbacks).first(each => each.name === (<any>response.language.csharp)?.name);
       // all mimeTypes per for this response code.
       yield eventListener.signal(ClientRuntime.Events.BeforeResponseDispatch, '_response');
       yield $this.NewResponseHandler(<string>values(response.protocol.http?.mediaTypes).first() || '', response, callbackParameter);
@@ -1215,7 +1215,7 @@ if( ${response.value}.StatusCode == ${System.Net.HttpStatusCode.OK})
       }
     }
     // make the callback with the appropriate parameters
-    yield `await ${eachResponse.details.csharp.name}(_response${callbackParameters.length === 0 ? '' : ','}${callbackParameters.joinWith(valueOf)});`;
+    yield `await ${(<any>eachResponse.details.csharp).name}(_response${callbackParameters.length === 0 ? '' : ','}${callbackParameters.joinWith(valueOf)});`;
   }
 
   private * NewResponseHandlerForNormalPipeline(mimetype: string, eachResponse: Response, callbackParameter: CallbackParameter) {
@@ -1243,7 +1243,7 @@ if( ${response.value}.StatusCode == ${System.Net.HttpStatusCode.OK})
       }
     }
     // make the callback with the appropriate parameters
-    yield `await ${eachResponse.language.csharp?.name}(_response${callbackParameters.length === 0 ? '' : ','}${callbackParameters.joinWith(valueOf)});`;
+    yield `await ${(<any>eachResponse.language.csharp)?.name}(_response${callbackParameters.length === 0 ? '' : ','}${callbackParameters.joinWith(valueOf)});`;
   }
 
   private responseHandler(mimetype: string, eachResponse: NewResponse, callbackParameter: CallbackParameter) {
@@ -1256,9 +1256,9 @@ if( ${response.value}.StatusCode == ${System.Net.HttpStatusCode.OK})
 export class ValidationMethod extends Method {
 
   constructor(protected parent: Class, protected opMethod: OperationMethod, protected state: State, objectInitializer?: DeepPartial<OperationMethod>) {
-    super(`${opMethod.operation.details.csharp.name}_Validate`, System.Threading.Tasks.Task());
+    super(`${(<any>opMethod.operation.details.csharp).name}_Validate`, System.Threading.Tasks.Task());
     this.apply(objectInitializer);
-    this.description = `Validation method for <see cref="${opMethod.operation.details.csharp.name}" /> method. Call this like the actual call, but you will get validation events back.`;
+    this.description = `Validation method for <see cref="${(<any>opMethod.operation.details.csharp).name}" /> method. Call this like the actual call, but you will get validation events back.`;
     this.returnsDescription = opMethod.returnsDescription;
     this.access = Access.Internal;
     this.async = Modifier.Async;

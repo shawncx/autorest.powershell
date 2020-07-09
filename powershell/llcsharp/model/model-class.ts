@@ -544,8 +544,16 @@ export class NewModelClass extends Class implements EnhancedTypeDeclaration {
   /* @internal */ validateMethod?: Method;
   /* @internal */ discriminators: Map<string, ModelClass> = new Map<string, ModelClass>();
   /* @internal */ parentModelClasses: Array<ModelClass> = new Array<ModelClass>();
-  /* @internal */ get modelInterface(): ModelInterface { return <ModelInterface>this.schema.language.csharp?.interfaceImplementation; }
-  /* @internal */ get internalModelInterface(): ModelInterface { return <ModelInterface>this.schema.language.csharp?.internalInterfaceImplementation; }
+  /* @internal */ get modelInterface(): ModelInterface {
+    const csharp = <any>this.schema.language.csharp;
+    return <ModelInterface>csharp?.interfaceImplementation;
+    // return <ModelInterface>this.schema.language.csharp?.interfaceImplementation; 
+  }
+  /* @internal */ get internalModelInterface(): ModelInterface {
+    const csharp = <any>this.schema.language.csharp;
+    return <ModelInterface>csharp?.internalInterfaceImplementation;
+    // return <ModelInterface>this.schema.language.csharp?.internalInterfaceImplementation; 
+  }
 
   /* @internal */  state: NewState;
   /* @internal */  backingFields = new Array<BackingField>();
@@ -562,14 +570,19 @@ export class NewModelClass extends Class implements EnhancedTypeDeclaration {
   // public hasHeaderProperties: boolean;
 
   constructor(namespace: Namespace, schemaWithFeatures: NewObjectImplementation, state: NewState, objectInitializer?: DeepPartial<ModelClass>) {
-    super(namespace, schemaWithFeatures.schema.language.csharp?.name || '');
+    super(namespace, (<any>(schemaWithFeatures.schema.language.csharp))?.name || '');
+    // super(namespace, schemaWithFeatures.schema.language.csharp?.name || '');
+
     this.featureImplementation = schemaWithFeatures;
     this.schema.language.csharp = this.schema.language.csharp || new Language();
-    this.schema.language.csharp.classImplementation = this; // mark the code-model with the class we're creating.
+    const csharp = <any>this.schema.language.csharp;
+    csharp.classImplementation = this; // mark the code-model with the class we're creating.
+    // this.schema.language.csharp.classImplementation = this; // mark the code-model with the class we're creating.
     this.state = state;
     this.apply(objectInitializer);
 
-    if (this.state.getValue('powershell') && this.schema.language.csharp.suppressFormat) {
+    if (this.state.getValue('powershell') && csharp.suppressFormat) {
+      // if (this.state.getValue('powershell') && this.schema.language.csharp.suppressFormat) {
       this.add(new Attribute(DoNotFormatAttribute));
     }
 
@@ -580,21 +593,27 @@ export class NewModelClass extends Class implements EnhancedTypeDeclaration {
     //this.handleDiscriminator();
 
     // create an interface for this model class
-    if (!this.schema.language.csharp.interfaceImplementation) {
-      (this.schema.language.csharp.interfaceImplementation = new NewModelInterface(this.namespace, this.schema.language.csharp.interfaceName || `I${this.schema.language.csharp.name}`, this, this.state));
+    if (!csharp.interfaceImplementation) {
+      // if (!this.schema.language.csharp.interfaceImplementation) {
+      (csharp.interfaceImplementation = new NewModelInterface(this.namespace, csharp.interfaceName || `I${csharp.name}`, this, this.state));
+      // (this.schema.language.csharp.interfaceImplementation = new NewModelInterface(this.namespace, this.schema.language.csharp.interfaceName || `I${this.schema.language.csharp.name}`, this, this.state));
 
     }
     this.interfaces.push(this.modelInterface);
 
-    if (!this.schema.language.csharp.internalInterfaceImplementation) {
-      (this.schema.language.csharp.internalInterfaceImplementation = new NewModelInterface(this.namespace, this.schema.language.csharp.internalInterfaceName || `I${this.schema.language.csharp.name}Internal`, this, this.state, { accessModifier: Access.Internal }));
+    if (!csharp.internalInterfaceImplementation) {
+      // if (!this.schema.language.csharp.internalInterfaceImplementation) {
+      (csharp.internalInterfaceImplementation = new NewModelInterface(this.namespace, csharp.internalInterfaceName || `I${csharp.name}Internal`, this, this.state, { accessModifier: Access.Internal }));
+      // (this.schema.language.csharp.internalInterfaceImplementation = new NewModelInterface(this.namespace, this.schema.language.csharp.internalInterfaceName || `I${this.schema.language.csharp.name}Internal`, this, this.state, { accessModifier: Access.Internal }));
 
     }
 
     this.interfaces.push(this.internalModelInterface);
 
-    this.schema.language.csharp.internalInterfaceImplementation.init();
-    this.schema.language.csharp.interfaceImplementation.init();
+    csharp.internalInterfaceImplementation.init();
+    // this.schema.language.csharp.internalInterfaceImplementation.init();
+    csharp.interfaceImplementation.init();
+    // this.schema.language.csharp.interfaceImplementation.init();
 
     // add default constructor
     this.addMethod(new Constructor(this, { description: `Creates an new <see cref="${this.name}" /> instance.` })); // default constructor for fits and giggles.
@@ -652,7 +671,9 @@ export class NewModelClass extends Class implements EnhancedTypeDeclaration {
     // and then expand the nested properties into this class forwarding to the member.  
 
     // add properties
-    if (this.schema.language.csharp?.virtualProperties) {
+    const csharp = <any>this.schema.language.csharp;
+    if (csharp?.virtualProperties) {
+      // if (this.schema.language.csharp?.virtualProperties) {
       const addFormatAttributesToProperty = (property: Property, virtualProperty: VirtualProperty) => {
         if (virtualProperty.format) {
           if (virtualProperty.format.suppressFormat) {
@@ -920,7 +941,9 @@ export class NewModelClass extends Class implements EnhancedTypeDeclaration {
   //   }
   // }
   private addHeaderDeserializer() {
-    const avp = getAllVirtualProperties(this.schema.language.csharp?.virtualProperties);
+    const csharp = <any>this.schema.language.csharp;
+    const avp = getAllVirtualProperties(csharp?.virtualProperties);
+    // const avp = getAllVirtualProperties(this.schema.language.csharp?.virtualProperties);
     const headers = new Parameter('headers', System.Net.Http.Headers.HttpResponseHeaders);
     const readHeaders = new Method(`${ClientRuntime.IHeaderSerializable}.ReadHeaders`, undefined, {
       access: Access.Explicit,

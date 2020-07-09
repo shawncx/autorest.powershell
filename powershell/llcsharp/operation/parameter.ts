@@ -74,11 +74,14 @@ export class NewOperationParameter extends Parameter implements EnhancedVariable
 
   constructor(parent: Method, param: NewHttpOperationParameter, state: NewState, objectInitializer?: DeepPartial<OperationParameter>) {
     const typeDeclaration = state.project.modelsNamespace.NewResolveTypeDeclaration(param.schema, !!param.required, state);
-    super(param.language.csharp?.name || '', typeDeclaration);
+    const csharp = <any>param.language.csharp;
+    super(csharp?.name || '', typeDeclaration);
+    // super(param.language.csharp?.name || '', typeDeclaration);
     this.param = param;
     this.typeDeclaration = typeDeclaration;
     this.apply(objectInitializer);
-    this.description = param.language.csharp?.description || '';
+    this.description = csharp?.description || '';
+    // this.description = param.language.csharp?.description || '';
   }
 
   /** emits an expression to deserialize a property from a member inside a container */

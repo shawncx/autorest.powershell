@@ -122,29 +122,36 @@ export class ModelsNamespace extends Namespace {
     }
 
     const td = this.newResolver.resolveTypeDeclaration(schema, required, state);
-
-    if (!schema.language.csharp?.skip) {
+    const csharp = <any>schema.language.csharp;
+    if (!csharp?.skip) {
+      // if (!schema.language.csharp?.skip) {
       if (td instanceof NewObjectImplementation) {
         // it's a class object.
         // create it if necessary
 
-        const fullname = schema.language.csharp?.namespace || this.fullName;
+        const fullname = csharp?.namespace || this.fullName;
+        // const fullname = schema.language.csharp?.namespace || this.fullName;
 
         const ns = this.subNamespaces[fullname] || this.add(new ApiVersionNamespace(fullname));
 
-        const mc = schema.language.csharp?.classImplementation || new NewModelClass(ns, td, <NewState>this.state, { description: schema.language.csharp?.description });
+        const mc = csharp?.classImplementation || new NewModelClass(ns, td, <NewState>this.state, { description: csharp?.description });
+        // const mc = schema.language.csharp?.classImplementation || new NewModelClass(ns, td, <NewState>this.state, { description: schema.language.csharp?.description });
 
         // this gets implicity created during class creation:
-        return <ModelInterface>schema.language.csharp?.interfaceImplementation;
+        return <ModelInterface>csharp?.interfaceImplementation;
+        // return <ModelInterface>schema.language.csharp?.interfaceImplementation;
       }
 
-      if (state.project.azure && /^api-?version$/i.exec(schema.language.csharp?.name || '')) {
+      if (state.project.azure && /^api-?version$/i.exec((<any>schema.language.csharp)?.name || '')) {
+        // if (state.project.azure && /^api-?version$/i.exec(schema.language.csharp?.name || '')) {
         return td;
       }
 
       if (td instanceof EnumImplementation) {
-        if (schema.language.csharp?.enum) {
-          const ec = state.project.supportNamespace.findClassByName(schema.language.csharp.enum.name);
+        if (csharp?.enum) {
+          // if (schema.language.csharp?.enum) {
+          const ec = state.project.supportNamespace.findClassByName(csharp.enum.name);
+          // const ec = state.project.supportNamespace.findClassByName(schema.language.csharp.enum.name);
           if (length(ec) === 0) {
             // skip-for-time-being
             //new EnumClass(td, state);
@@ -152,7 +159,8 @@ export class ModelsNamespace extends Namespace {
           }
         }
         schema.language.csharp = schema.language.csharp || new Language();
-        return schema.language.csharp.typeDeclaration = td;
+        return csharp.typeDeclaration = td;
+        // return schema.language.csharp.typeDeclaration = td;
       }
     }
     return td;
@@ -199,29 +207,36 @@ export class NewModelsNamespace extends Namespace {
     }
 
     const td = this.newResolver.resolveTypeDeclaration(schema, required, state);
-
-    if (!schema.language.csharp?.skip) {
+    const csharp = <any>schema.language.csharp;
+    if (!csharp?.skip) {
+      // if (!schema.language.csharp?.skip) {
       if (td instanceof NewObjectImplementation) {
         // it's a class object.
         // create it if necessary
 
-        const fullname = schema.language.csharp?.namespace || this.fullName;
+        const fullname = csharp?.namespace || this.fullName;
+        // const fullname = schema.language.csharp?.namespace || this.fullName;
 
         const ns = this.subNamespaces[fullname] || this.add(new ApiVersionNamespace(fullname));
 
-        const mc = schema.language.csharp?.classImplementation || new NewModelClass(ns, td, <NewState>this.state, { description: schema.language.csharp?.description });
+        const mc = csharp?.classImplementation || new NewModelClass(ns, td, <NewState>this.state, { description: csharp?.description });
+        // const mc = schema.language.csharp?.classImplementation || new NewModelClass(ns, td, <NewState>this.state, { description: schema.language.csharp?.description });
 
         // this gets implicity created during class creation:
-        return <ModelInterface>schema.language.csharp?.interfaceImplementation;
+        return <ModelInterface>csharp?.interfaceImplementation;
+        // return <ModelInterface>schema.language.csharp?.interfaceImplementation;
       }
 
-      if (state.project.azure && /^api-?version$/i.exec(schema.language.csharp?.name || '')) {
+      if (state.project.azure && /^api-?version$/i.exec(csharp?.name || '')) {
+        // if (state.project.azure && /^api-?version$/i.exec(schema.language.csharp?.name || '')) {
         return td;
       }
 
       if (td instanceof EnumImplementation) {
-        if (schema.language.csharp?.enum) {
-          const ec = state.project.supportNamespace.findClassByName(schema.language.csharp.enum.name);
+        if (csharp?.enum) {
+          // if (schema.language.csharp?.enum) {
+          const ec = state.project.supportNamespace.findClassByName(csharp.enum.name);
+          // const ec = state.project.supportNamespace.findClassByName(schema.language.csharp.enum.name);
           if (length(ec) === 0) {
             // skip-for-time-being
             //new EnumClass(td, state);
@@ -229,7 +244,8 @@ export class NewModelsNamespace extends Namespace {
           }
         }
         schema.language.csharp = schema.language.csharp || new Language();
-        return schema.language.csharp.typeDeclaration = td;
+        return csharp.typeDeclaration = td;
+        // return schema.language.csharp.typeDeclaration = td;
       }
     }
     return td;

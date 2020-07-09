@@ -155,7 +155,9 @@ export class SchemaDefinitionResolver {
 export class NewSchemaDefinitionResolver {
   private readonly cache = new Map<string, EnhancedTypeDeclaration>();
   private add(schema: NewSchema, value: EnhancedTypeDeclaration): EnhancedTypeDeclaration {
-    this.cache.set(schema.language?.csharp?.fullname || '', value);
+    const csharp = <any>schema.language?.csharp;
+    this.cache.set(csharp?.fullname || '', value);
+    // this.cache.set(schema.language?.csharp?.fullname || '', value);
     return value;
   }
 
@@ -163,6 +165,7 @@ export class NewSchemaDefinitionResolver {
     if (!schema) {
       throw new Error('SCHEMA MISSING?');
     }
+    const csharp = <any>schema.language.csharp;
 
     // determine if we need a new model class for the type or just a known type object
     switch (schema.type) {
@@ -175,7 +178,8 @@ export class NewSchemaDefinitionResolver {
       // }
 
       case SchemaType.Object: {
-        const result = schema.language.csharp && this.cache.get(schema.language.csharp.fullname || '');
+        const result = schema.language.csharp && this.cache.get(csharp.fullname || '');
+        // const result = schema.language.csharp && this.cache.get(schema.language.csharp.fullname || '');
         if (result) {
           return result;
         }
@@ -226,7 +230,8 @@ export class NewSchemaDefinitionResolver {
         break;
 
     }
-    state.error(`Schema '${schema.language.csharp?.name}' is declared with invalid type '${schema.type}'`, message.UnknownJsonType);
+    state.error(`Schema '${csharp?.name}' is declared with invalid type '${schema.type}'`, message.UnknownJsonType);
+    // state.error(`Schema '${schema.language.csharp?.name}' is declared with invalid type '${schema.type}'`, message.UnknownJsonType);
     throw new Error('Unknown Model. Fatal.');
   }
 }

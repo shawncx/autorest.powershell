@@ -279,7 +279,9 @@ export class NewModelExtensionsNamespace extends Namespace {
 
     // Add typeconverters to model classes (partial)
     for (const schema of values(schemas)) {
-      if (!schema || (schema.language.csharp && schema.language.csharp.skip)) {
+      const csharp = <any>schema.language.csharp;
+      if (!schema || (schema.language.csharp && csharp.skip)) {
+        // if (!schema || (schema.language.csharp && schema.language.csharp.skip)) {
         continue;
       }
 
@@ -296,7 +298,8 @@ export class NewModelExtensionsNamespace extends Namespace {
         }
 
         // get the actual full namespace for the schema
-        const fullname = schema.language.csharp?.namespace || this.fullName;
+        const fullname = csharp?.namespace || this.fullName;
+        // const fullname = schema.language.csharp?.namespace || this.fullName;
         const ns = this.subNamespaces[fullname] || this.add(new ApiVersionModelExtensionsNamespace(this.outputFolder, fullname));
 
         // create the model extensions for each object model
@@ -317,9 +320,11 @@ export class NewModelExtensionsNamespace extends Namespace {
 
         // if the model is supposed to be use 'by-reference' we should create an I*Reference interface for that
         // and add that interface to the extension class
-        if (schema.language.csharp?.byReference) {
+        if (csharp?.byReference) {
+          // if (schema.language.csharp?.byReference) {
           const refInterface = `${interfaceName}_Reference`;
-          schema.language.csharp.referenceInterface = `${ns.fullName}.${refInterface}`;
+          csharp.referenceInterface = `${ns.fullName}.${refInterface}`;
+          // schema.language.csharp.referenceInterface = `${ns.fullName}.${refInterface}`;
 
           const referenceInterface = new Interface(ns, refInterface, {
             partial: true,
@@ -413,7 +418,8 @@ export class NewModelExtensionsNamespace extends Namespace {
           const t = new LocalVariable('type', System.Type, { initializer: 'sourceValue.GetType()' });
           yield t.declarationStatement;
 
-          if (schema.language.default.uid === 'universal-parameter-type' || schema.language.csharp?.byReference) {
+          if (schema.language.default.uid === 'universal-parameter-type' || csharp?.byReference) {
+            // if (schema.language.default.uid === 'universal-parameter-type' || schema.language.csharp?.byReference) {
             yield '// we allow string conversion too.';
             yield If(`${t.value} == typeof(${System.String})`, Return(dotnet.True));
           }
@@ -456,14 +462,16 @@ export class NewModelExtensionsNamespace extends Namespace {
           const t = new LocalVariable('type', System.Type, { initializer: 'sourceValue.GetType()' });
           yield t.declarationStatement;
 
-          if (($this.state.project.azure && schema.language.default.uid === 'universal-parameter-type') || schema.language.csharp?.byReference) {
+          if (($this.state.project.azure && schema.language.default.uid === 'universal-parameter-type') || csharp?.byReference) {
+            // if (($this.state.project.azure && schema.language.default.uid === 'universal-parameter-type') || schema.language.csharp?.byReference) {
             yield '// support direct string to id type conversion.';
             yield If(`${t.value} == typeof(${System.String})`, function* () {
               yield Return(`new ${className} { Id = sourceValue }`);
             });
           }
 
-          if (schema.language.csharp?.byReference) {
+          if (csharp?.byReference) {
+            // if (schema.language.csharp?.byReference) {
             yield '// if Id is present with by-reference schemas, just return the type with Id ';
             yield Try(Return(`new ${className} { Id = sourceValue.Id }`));
             yield Catch(undefined, '// Not an Id reference parameter');

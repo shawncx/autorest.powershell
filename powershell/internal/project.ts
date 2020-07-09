@@ -301,7 +301,9 @@ export class NewProject extends codeDomProject {
 
     this.schemaDefinitionResolver = new NewPSSchemaResolver();
 
-    this.projectNamespace = this.state.model.language.csharp?.namespace || '';
+    const csharp = this.state.model.language.csharp;
+    this.projectNamespace = csharp ? (<any>csharp).namespace : '';
+    // this.projectNamespace = this.state.model.language.csharp?.namespace || '';
 
 
     this.overrides = {

@@ -78,7 +78,9 @@ export class NewSerializationPartialClass extends Initializer {
   }
 
   protected get virtualProperties() {
-    return this.schema.language.csharp?.virtualProperties || {
+    const csharp = <any>this.schema.language.csharp;
+    return csharp?.virtualProperties || {
+      // return this.schema.language.csharp?.virtualProperties || {
       owned: [],
       inherited: [],
       inlined: []

@@ -336,7 +336,9 @@ export class NewModuleClass extends Class {
       description: 'the singleton of this module class'
     }));
 
-    const clientAPI = new ClassType(this.state.model.language.csharp?.namespace, this.state.model.language.csharp?.name || '');
+    const csharp = <any>this.state.model.language.csharp;
+    const clientAPI = new ClassType(csharp?.namespace, csharp?.name || '');
+    // const clientAPI = new ClassType(this.state.model.language.csharp?.namespace, this.state.model.language.csharp?.name || '');
     const clientProperty = this.add(new Property('ClientAPI', clientAPI, { description: 'The instance of the Client API' }));
 
     if (this.state.project.azure) {

@@ -300,13 +300,20 @@ export class NewModelInterface extends Interface implements EnhancedTypeDeclarat
     this.schema.language.csharp = this.schema.language.csharp || new Language();
     const implData = (this.schema.language.csharp = this.schema.language.csharp || {});
     //implData.interfaceImplementation = this;
-    this.description = `${this.schema.language.csharp.description}`;
+    const csharp = <any>this.schema.language.csharp;
+    this.description = `${csharp.description}`;
+    // this.description = `${this.schema.language.csharp.description}`;
 
-    const virtualProperties = this.schema.language.csharp.virtualProperties || {
+    const virtualProperties = csharp.virtualProperties || {
       owned: [],
       inherited: [],
       inlined: []
     };
+    // const virtualProperties = this.schema.language.csharp.virtualProperties || {
+    //   owned: [],
+    //   inherited: [],
+    //   inlined: []
+    // };
     // skip-for-time-being
     // if (this.schema.language.csharp.virtualProperties) {
 
@@ -357,7 +364,8 @@ export class NewModelInterface extends Interface implements EnhancedTypeDeclarat
 
     if (!this.isInternal) {
       // mark it as json serializable
-      if (!this.schema.language.csharp.isHeaderModel) {
+      if (!csharp.isHeaderModel) {
+        // if (!this.schema.language.csharp.isHeaderModel) {
         if (this.state.project.jsonSerialization) {
           this.interfaces.push(ClientRuntime.IJsonSerializable);
         }

@@ -33,7 +33,8 @@ export class NewModuleNamespace extends Namespace {
   }
 
   constructor(public state: NewState, objectInitializer?: DeepPartial<ModuleNamespace>) {
-    super(state.model.language.csharp?.namespace || 'INVALID.NAMESPACE', state.project);
+    super((<any>state.model.language.csharp)?.namespace || 'INVALID.NAMESPACE', state.project);
+    // super(state.model.language.csharp?.namespace || 'INVALID.NAMESPACE', state.project);
     this.apply(objectInitializer);
     this.add(new ImportDirective(`static ${ClientRuntime.Extensions}`));
 

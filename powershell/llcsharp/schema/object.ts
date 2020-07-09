@@ -193,7 +193,8 @@ export class NewObjectImplementation implements EnhancedTypeDeclaration {
   }
 
   get convertObjectMethod() {
-    return `${this.schema.language.csharp?.fullname}TypeConverter.ConvertFrom`;
+    return `${(<any>this.schema.language.csharp)?.fullname}TypeConverter.ConvertFrom`;
+    // return `${this.schema.language.csharp?.fullname}TypeConverter.ConvertFrom`;
   }
 
   deserializeFromContainerMember(mediaType: KnownMediaType, container: ExpressionOrLiteral, serializedName: string, defaultValue: Expression): Expression {
@@ -301,7 +302,8 @@ export class NewObjectImplementation implements EnhancedTypeDeclaration {
   deserializeFromResponse(mediaType: KnownMediaType, content: ExpressionOrLiteral, defaultValue: Expression): Expression | undefined {
     switch (mediaType) {
       case KnownMediaType.Json: {
-        if (this.schema.language.csharp?.hasHeaders) {
+        if ((<any>this.schema.language.csharp)?.hasHeaders) {
+          // if (this.schema.language.csharp?.hasHeaders) {
           return toExpression(`${content}.Content.ReadAsStringAsync().ContinueWith( body => ${this.deserializeFromString(mediaType, 'body.Result', defaultValue)}.ReadHeaders(_response.Headers))`);
         }
         return toExpression(`${content}.Content.ReadAsStringAsync().ContinueWith( body => ${this.deserializeFromString(mediaType, 'body.Result', defaultValue)})`);
@@ -340,7 +342,15 @@ export class NewObjectImplementation implements EnhancedTypeDeclaration {
     return `await ${eventListener}.AssertObjectIsValid(${nameof(property.value)}, ${property}); `;
   }
 
-  get declaration(): string { return `${this.schema.language.csharp?.namespace}.${this.schema.language.csharp?.interfaceName}`; }
-  get classDeclaration(): string { return `${this.schema.language.csharp?.namespace}.${this.schema.language.csharp?.name}`; }
+  get declaration(): string {
+    const csharp = <any>this.schema.language.csharp;
+    return `${csharp?.namespace}.${csharp?.interfaceName}`;
+    // return `${this.schema.language.csharp?.namespace}.${this.schema.language.csharp?.interfaceName}`; 
+  }
+  get classDeclaration(): string {
+    const csharp = <any>this.schema.language.csharp;
+    return `${csharp?.namespace}.${csharp?.name}`;
+    // return `${this.schema.language.csharp?.namespace}.${this.schema.language.csharp?.name}`; 
+  }
 
 }

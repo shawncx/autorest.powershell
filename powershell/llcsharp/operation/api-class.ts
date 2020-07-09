@@ -15,7 +15,8 @@ export class ApiClass extends Class {
 
   // protected sender: Property;
   constructor(namespace: Namespace, protected state: State | NewState, objectInitializer?: DeepPartial<ApiClass>) {
-    super(namespace, (state instanceof NewState) ? state.model.language.csharp?.name || '' : state.model.details.csharp.name);
+    super(namespace, (state instanceof NewState) ? (<any>state.model.language.csharp)?.name || '' : (<any>state.model.details.csharp).name);
+    // super(namespace, (state instanceof NewState) ? state.model.language.csharp?.name || '' : state.model.details.csharp.name);
     this.apply(objectInitializer);
 
     // add basics
