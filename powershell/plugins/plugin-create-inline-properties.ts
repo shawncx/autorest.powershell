@@ -3,14 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { codeModelSchema, CodeModel, ObjectSchema, GroupSchema, isObjectSchema, SchemaType, GroupProperty, ParameterLocation, Operation, Parameter, ImplementationLocation, OperationGroup, Request, SchemaContext } from '@azure-tools/codemodel';
-import { Schema, codemodel, JsonType, processCodeModel, VirtualProperty, VirtualParameter, resolveParameterNames, ModelState, getAllProperties, getAllPublicVirtualProperties } from '@azure-tools/codemodel-v3';
+import { codeModelSchema, CodeModel, ObjectSchema, GroupSchema, isObjectSchema, SchemaType, GroupProperty, ParameterLocation, Operation, Parameter, ImplementationLocation, OperationGroup, Request, SchemaContext, Schema, getAllProperties } from '@azure-tools/codemodel';
 import { getPascalIdentifier, removeSequentialDuplicates, pascalCase, fixLeadingNumber, deconstruct, selectName, EnglishPluralizationService, serialize } from '@azure-tools/codegen';
 import { length, values, } from '@azure-tools/linq';
 import { Host, Session, startSession } from '@azure-tools/autorest-extension-base';
-import { CommandOperation } from '@azure-tools/codemodel-v3/dist/code-model/command-operation';
+import { CommandOperation, VirtualParameter } from '@azure-tools/codemodel-v3/dist/code-model/command-operation';
 import { PwshModel } from '../utils/PwshModel';
 import { NewModelState } from '../utils/model-state';
+import { VirtualProperties, VirtualProperty } from '../utils/virtualProperty';
 
 
 function getPluralizationService(): EnglishPluralizationService {
@@ -41,248 +41,257 @@ function getNameOptions(typeName: string, components: Array<string>) {
 }
 
 
-// function createVirtualProperties(schema: Schema, stack: Array<string>, threshold: number, conflicts: Array<string>) {
-//   // dolauli
-//   //    owned: all properties(obj & nonobj) in the schema,
-//   //  inherited: Properties from parents,
-//   //    inlined: for obj properties, flatten them to children,
-//   // did we already inline this object
-//   if (schema.details.default.inline === 'yes') {
-//     return true;
-//   }
+function createVirtualProperties(schema: ObjectSchema, stack: Array<string>, threshold: number, conflicts: Array<string>) {
+  // dolauli
+  //    owned: all properties(obj & nonobj) in the schema,
+  //  inherited: Properties from parents,
+  //    inlined: for obj properties, flatten them to children,
+  // did we already inline this object
+  if (schema.language.default.inline === 'yes') {
+    return true;
+  }
 
-//   if (schema.details.default.inline === 'no') {
-//     return false;
-//   }
+  if (schema.language.default.inline === 'no') {
+    return false;
+  }
 
-//   // this is bad. This would happen when we have a circular reference in the tree.
-//   // dolauli curious in which case this will happen, got it to use no-inline to skip inline and avoid circular reference
-//   if (schema.details.default.inline === 'inprogress') {
-//     let text = (`Note: during processing of '${schema.details.default.name}' a circular reference has been discovered.`);
-//     text += '\n  In order to proceed, you must add a directive to indicate which model you want to not inline.\n';
-//     text += '\ndirective:';
-//     text += '\n- no-inline:  # choose ONE of these models to disable inlining';
-//     for (const each of stack) {
-//       text += (`\n  - ${each} `);
-//     }
-//     text += '\n';
-//     conflicts.push(text);
-//     /*     `directive:
-//          - no-inline: 
-//            - MyModel
-//            - YourModel
-//            - HerModel
-//         ` */
+  // this is bad. This would happen when we have a circular reference in the tree.
+  // dolauli curious in which case this will happen, got it to use no-inline to skip inline and avoid circular reference
+  if (schema.language.default.inline === 'inprogress') {
+    let text = (`Note: during processing of '${schema.language.default.name}' a circular reference has been discovered.`);
+    text += '\n  In order to proceed, you must add a directive to indicate which model you want to not inline.\n';
+    text += '\ndirective:';
+    text += '\n- no-inline:  # choose ONE of these models to disable inlining';
+    for (const each of stack) {
+      text += (`\n  - ${each} `);
+    }
+    text += '\n';
+    conflicts.push(text);
+    /*     `directive:
+         - no-inline: 
+           - MyModel
+           - YourModel
+           - HerModel
+        ` */
 
-//     // `, and we're skipping inlining.\n  ${stack.join(' => ')}`);
-//     // mark it as 'not-inlining'
-//     schema.details.default.inline = 'no';
-//     return false;
-//   }
+    // `, and we're skipping inlining.\n  ${stack.join(' => ')}`);
+    // mark it as 'not-inlining'
+    schema.language.default.inline = 'no';
+    return false;
+  }
 
-//   // ok, set to in progress now.
-//   schema.details.default.inline = 'inprogress';
+  // ok, set to in progress now.
+  schema.language.default.inline = 'inprogress';
 
-//   // virutual property set.
-//   const virtualProperties = schema.details.default.virtualProperties = {
-//     owned: new Array<VirtualProperty>(),
-//     inherited: new Array<VirtualProperty>(),
-//     inlined: new Array<VirtualProperty>(),
-//   };
+  // virutual property set.
+  const virtualProperties = schema.language.default.virtualProperties = {
+    owned: new Array<VirtualProperty>(),
+    inherited: new Array<VirtualProperty>(),
+    inlined: new Array<VirtualProperty>(),
+  };
 
-//   // First we should run thru the properties in parent classes and create inliners for each property they have.
-//   // dolauli handle properties in parents
-//   for (const parentSchema of values(schema.allOf)) {
-//     // make sure that the parent is done.
-//     createVirtualProperties(parentSchema, [...stack, `${schema.details.default.name}`], threshold, conflicts);
+  // First we should run thru the properties in parent classes and create inliners for each property they have.
+  // dolauli handle properties in parents
+  for (const parentSchema of values(schema.parents?.all)) {
+    // make sure that the parent is done.
+    if (parentSchema.type === SchemaType.Object) {
+      createVirtualProperties(parentSchema as ObjectSchema, [...stack, `${schema.language.default.name}`], threshold, conflicts);
+    }
 
-//     const parentProperties = parentSchema.details.default.virtualProperties || {
-//       owned: [],
-//       inherited: [],
-//       inlined: [],
-//     };
+    const parentProperties = parentSchema.language.default.virtualProperties || {
+      owned: [],
+      inherited: [],
+      inlined: [],
+    };
 
-//     // now we go thru the parent's virutal properties and create our own copies 
-//     for (const virtualProperty of [...parentProperties.inherited, ...parentProperties.inlined, ...parentProperties.owned]) {
-//       // make sure that we have a list of shared owners of this property.
-//       virtualProperty.sharedWith = virtualProperty.sharedWith || [virtualProperty];
+    // now we go thru the parent's virutal properties and create our own copies 
+    for (const virtualProperty of [...parentProperties.inherited, ...parentProperties.inlined, ...parentProperties.owned]) {
+      // make sure that we have a list of shared owners of this property.
+      virtualProperty.sharedWith = virtualProperty.sharedWith || [virtualProperty];
 
-//       // we are just copying over theirs to ours.
-//       const inheritedProperty = {
-//         name: virtualProperty.name,
-//         property: virtualProperty.property,
-//         private: virtualProperty.private,
-//         nameComponents: virtualProperty.nameComponents,
-//         nameOptions: virtualProperty.nameOptions,
-//         accessViaProperty: virtualProperty,
-//         accessViaMember: virtualProperty,
-//         accessViaSchema: parentSchema,
-//         originalContainingSchema: virtualProperty.originalContainingSchema,
-//         description: virtualProperty.description,
-//         alias: [],
-//         required: virtualProperty.required || !!values(schema.required).first(each => !!each && !!each.toLowerCase && each.toLowerCase() === virtualProperty.property.details.default.name.toLowerCase()),
-//         sharedWith: virtualProperty.sharedWith,
-//       };
-//       // add it to the list of virtual properties that share this property.
-//       virtualProperty.sharedWith.push(inheritedProperty);
+      // we are just copying over theirs to ours.
+      const inheritedProperty = {
+        name: virtualProperty.name,
+        property: virtualProperty.property,
+        private: virtualProperty.private,
+        nameComponents: virtualProperty.nameComponents,
+        nameOptions: virtualProperty.nameOptions,
+        accessViaProperty: virtualProperty,
+        accessViaMember: virtualProperty,
+        accessViaSchema: parentSchema,
+        originalContainingSchema: virtualProperty.originalContainingSchema,
+        description: virtualProperty.description,
+        alias: [],
+        required: virtualProperty.required,
+        sharedWith: virtualProperty.sharedWith,
+      };
+      // add it to the list of virtual properties that share this property.
+      virtualProperty.sharedWith.push(inheritedProperty);
 
-//       // add it to this class.
-//       virtualProperties.inherited.push(inheritedProperty);
-//     }
-//   }
+      // add it to this class.
+      virtualProperties.inherited.push(inheritedProperty);
+    }
+  }
 
-//   // dolauli figure out object properties and non object properties in this class 
-//   const [objectProperties, nonObjectProperties] = values(schema.properties).bifurcate(each =>
-//     !schema.details.default['skip-inline'] && // if this schema is marked skip-inline, none can be inlined, treat them all as straight properties.
-//     !each.schema.details.default['skip-inline'] && // if the property schema is marked skip-inline, then it should not be processed either.
-//     each.schema.type === JsonType.Object &&       // is it an object 
-//     getAllProperties(each.schema).length > 0    // does it have properties (or inherit properties)
-//   );
+  // dolauli figure out object properties and non object properties in this class 
+  const [objectProperties, nonObjectProperties] = values(schema.properties).bifurcate(each => {
+    if (each.schema.type !== SchemaType.Object) {
+      return false;
+    } else {
+      return !schema.language.default['skip-inline'] && // if this schema is marked skip-inline, none can be inlined, treat them all as straight properties.
+        !each.schema.language.default['skip-inline'] && // if the property schema is marked skip-inline, then it should not be processed either.
+        each.schema.type === SchemaType.Object &&       // is it an object 
+        values(getAllProperties(each.schema as ObjectSchema)).all.length > 0    // does it have properties (or inherit properties)
+    }
+  });
 
-//   // run thru the properties in this class.
-//   // dolauli handle properties in this class
-//   for (const property of objectProperties) {
-//     const propertyName = property.details.default.name;
+  // run thru the properties in this class.
+  // dolauli handle properties in this class
+  for (const property of objectProperties) {
+    if (property.schema.type !== SchemaType.Object) {
+      continue;
+    }
+    const propertyName = property.language.default.name;
 
-//     // for each object member, make sure that it's inlined it's children that it can.
-//     createVirtualProperties(property.schema, [...stack, `${schema.details.default.name}`], threshold, conflicts);
+    // for each object member, make sure that it's inlined it's children that it can.
+    createVirtualProperties(property.schema as ObjectSchema, [...stack, `${schema.language.default.name}`], threshold, conflicts);
 
-//     // this happens if there is a circular reference.
-//     // this means that this class should not attempt any inlining of that property at all .
-//     // dolauli pay attention to the condition check
-//     const canInline =
-//       // (!property.schema.details.default['skip-inline']) &&
-//       (!property.schema.details.default.byReference) &&
-//       (!property.schema.additionalProperties) &&
-//       property.schema.details.default.inline === 'yes';
+    // this happens if there is a circular reference.
+    // this means that this class should not attempt any inlining of that property at all .
+    // dolauli pay attention to the condition check
+    const canInline =
+      // (!property.schema.details.default['skip-inline']) &&
+      (!property.schema.language.default.byReference) &&
+      // (!property.schema.additionalProperties) &&
+      property.schema.language.default.inline === 'yes';
 
-//     // the target has properties that we can inline
-//     const virtualChildProperties = property.schema.details.default.virtualProperties || {
-//       owned: [],
-//       inherited: [],
-//       inlined: [],
-//     };
+    // the target has properties that we can inline
+    const virtualChildProperties = property.schema.language.default.virtualProperties || {
+      owned: [],
+      inherited: [],
+      inlined: [],
+    };
 
-//     const allNotRequired = values(getAllPublicVirtualProperties()).all(each => !each.property.details.default.required);
+    const allNotRequired = values(getAllPublicVirtualProperties()).all(each => !each.property.required);
 
-//     const childCount = length(virtualChildProperties.owned) + length(virtualChildProperties.inherited) + length(virtualChildProperties.inlined);
-//     if (canInline && (property.details.default.required || allNotRequired) && (childCount < threshold || propertyName === 'properties')) {
-
-
-//       // if the child property is low enough (or it's 'properties'), let's create virtual properties for each one.
-//       // create a private property for the inlined ones to use.
-//       const privateProperty = {
-//         name: getPascalIdentifier(propertyName),
-//         propertySchema: schema,
-//         property,
-//         nameComponents: [getPascalIdentifier(propertyName)],
-//         nameOptions: getNameOptions(schema.details.default.name, [propertyName]),
-//         private: true,
-//         description: property.description || '',
-//         originalContainingSchema: schema,
-//         alias: [],
-//         required: property.details.default.required,
-//       };
-//       virtualProperties.owned.push(privateProperty);
-
-//       for (const inlinedProperty of [...virtualChildProperties.inherited, ...virtualChildProperties.owned]) {
-//         // child properties are be inlined without prefixing the name with the property name
-//         // unless there is a collision, in which case, we have to resolve 
-
-//         // (scan back from the far right)
-//         // deeper child properties should be inlined with their parent's name 
-//         // ie, this.[properties].owner.name should be this.ownerName 
-
-//         const proposedName = getPascalIdentifier(`${propertyName === 'properties' || /*objectProperties.length === 1*/ propertyName === 'error' ? '' : pascalCase(fixLeadingNumber(deconstruct(propertyName)).map(each => singularize(each)))} ${inlinedProperty.name}`);
-
-//         const components = [...removeSequentialDuplicates([propertyName, ...inlinedProperty.nameComponents])];
-//         virtualProperties.inlined.push({
-//           name: proposedName,
-//           property: inlinedProperty.property,
-//           private: inlinedProperty.private,
-//           nameComponents: components,
-//           nameOptions: getNameOptions(inlinedProperty.property.schema.details.default.name, components),
-//           accessViaProperty: privateProperty,
-//           accessViaMember: inlinedProperty,
-//           accessViaSchema: schema,
-//           originalContainingSchema: schema,
-//           description: inlinedProperty.description,
-//           alias: [],
-//           required: inlinedProperty.required && privateProperty.required,
-//         });
-//       }
+    const childCount = length(virtualChildProperties.owned) + length(virtualChildProperties.inherited) + length(virtualChildProperties.inlined);
+    if (canInline && (property.language.default.required || allNotRequired) && (childCount < threshold || propertyName === 'properties')) {
 
 
-//       for (const inlinedProperty of [...virtualChildProperties.inlined]) {
-//         // child properties are be inlined without prefixing the name with the property name
-//         // unless there is a collision, in which case, we have to resolve 
+      // if the child property is low enough (or it's 'properties'), let's create virtual properties for each one.
+      // create a private property for the inlined ones to use.
+      const privateProperty = {
+        name: getPascalIdentifier(propertyName),
+        propertySchema: schema,
+        property,
+        nameComponents: [getPascalIdentifier(propertyName)],
+        nameOptions: getNameOptions(schema.language.default.name, [propertyName]),
+        private: true,
+        description: property.language.default.description || '',
+        originalContainingSchema: schema,
+        alias: [],
+        required: property.required ?? false,
+      };
+      virtualProperties.owned.push(privateProperty);
 
-//         // (scan back from the far right)
-//         // deeper child properties should be inlined with their parent's name 
-//         // ie, this.[properties].owner.name should be this.ownerName 
+      for (const inlinedProperty of [...virtualChildProperties.inherited, ...virtualChildProperties.owned]) {
+        // child properties are be inlined without prefixing the name with the property name
+        // unless there is a collision, in which case, we have to resolve 
+
+        // (scan back from the far right)
+        // deeper child properties should be inlined with their parent's name 
+        // ie, this.[properties].owner.name should be this.ownerName 
+
+        const proposedName = getPascalIdentifier(`${propertyName === 'properties' || /*objectProperties.length === 1*/ propertyName === 'error' ? '' : pascalCase(fixLeadingNumber(deconstruct(propertyName)).map(each => singularize(each)))} ${inlinedProperty.name}`);
+
+        const components = [...removeSequentialDuplicates([propertyName, ...inlinedProperty.nameComponents])];
+        virtualProperties.inlined.push({
+          name: proposedName,
+          property: inlinedProperty.property,
+          private: inlinedProperty.private,
+          nameComponents: components,
+          nameOptions: getNameOptions(inlinedProperty.property.schema.details.default.name, components),
+          accessViaProperty: privateProperty,
+          accessViaMember: inlinedProperty,
+          accessViaSchema: schema,
+          originalContainingSchema: schema,
+          description: inlinedProperty.description,
+          alias: [],
+          required: inlinedProperty.required && privateProperty.required,
+        });
+      }
 
 
-//         const proposedName = getPascalIdentifier(inlinedProperty.name);
-//         const components = [...removeSequentialDuplicates([propertyName, ...inlinedProperty.nameComponents])];
-//         virtualProperties.inlined.push({
-//           name: proposedName,
-//           property: inlinedProperty.property,
-//           private: inlinedProperty.private,
-//           nameComponents: components,
-//           nameOptions: getNameOptions(inlinedProperty.property.schema.details.default.name, components),
-//           accessViaProperty: privateProperty,
-//           accessViaMember: inlinedProperty,
-//           accessViaSchema: schema,
-//           originalContainingSchema: schema,
-//           description: inlinedProperty.description,
-//           alias: [],
-//           required: inlinedProperty.required && privateProperty.required
-//         });
-//       }
-//     } else {
-//       // otherwise, we're not below the threshold, and we should treat this as a non-inlined property
-//       nonObjectProperties.push(property);
-//     }
-//   }
+      for (const inlinedProperty of [...virtualChildProperties.inlined]) {
+        // child properties are be inlined without prefixing the name with the property name
+        // unless there is a collision, in which case, we have to resolve 
 
-//   for (const property of nonObjectProperties) {
-//     const name = getPascalIdentifier(<string>property.details.default.name);
-//     // this is not something that has properties,
-//     // so we don't need to do any inlining
-//     // however, we can add it to our list of virtual properties
-//     // so that our consumers can get it.
-//     virtualProperties.owned.push({
-//       name,
-//       property,
-//       nameComponents: [name],
-//       nameOptions: [name],
-//       description: property.description || '',
-//       originalContainingSchema: schema,
-//       alias: [],
-//       required: property.details.default.required
-//     });
-//   }
+        // (scan back from the far right)
+        // deeper child properties should be inlined with their parent's name 
+        // ie, this.[properties].owner.name should be this.ownerName 
 
-//   // resolve name collisions.
-//   const allProps = [...virtualProperties.owned, ...virtualProperties.inherited, ...virtualProperties.inlined];
-//   const inlined = new Map<string, number>();
 
-//   for (const each of allProps) {
-//     // track number of instances of a given name.
-//     inlined.set(each.name, (inlined.get(each.name) || 0) + 1);
-//   }
+        const proposedName = getPascalIdentifier(inlinedProperty.name);
+        const components = [...removeSequentialDuplicates([propertyName, ...inlinedProperty.nameComponents])];
+        virtualProperties.inlined.push({
+          name: proposedName,
+          property: inlinedProperty.property,
+          private: inlinedProperty.private,
+          nameComponents: components,
+          nameOptions: getNameOptions(inlinedProperty.property.schema.details.default.name, components),
+          accessViaProperty: privateProperty,
+          accessViaMember: inlinedProperty,
+          accessViaSchema: schema,
+          originalContainingSchema: schema,
+          description: inlinedProperty.description,
+          alias: [],
+          required: inlinedProperty.required && privateProperty.required
+        });
+      }
+    } else {
+      // otherwise, we're not below the threshold, and we should treat this as a non-inlined property
+      nonObjectProperties.push(property);
+    }
+  }
 
-//   const usedNames = new Set(inlined.keys());
-//   for (const each of virtualProperties.inlined.sort((a, b) => length(a.nameOptions) - length(b.nameOptions))) {
-//     const ct = inlined.get(each.name);
-//     if (ct && ct > 1) {
-//       // console.error(`Fixing collision on name ${each.name} #${ct} `);
-//       each.name = selectName(each.nameOptions, usedNames);
-//     }
-//   }
-//   schema.details.default.inline = 'yes';
-//   return true;
-// }
+  for (const property of nonObjectProperties) {
+    const name = getPascalIdentifier(<string>property.language.default.name);
+    // this is not something that has properties,
+    // so we don't need to do any inlining
+    // however, we can add it to our list of virtual properties
+    // so that our consumers can get it.
+    virtualProperties.owned.push({
+      name,
+      property,
+      nameComponents: [name],
+      nameOptions: [name],
+      description: property.language.default.description || '',
+      originalContainingSchema: schema,
+      alias: [],
+      required: property.required ?? false
+    });
+  }
+
+  // resolve name collisions.
+  const allProps = [...virtualProperties.owned, ...virtualProperties.inherited, ...virtualProperties.inlined];
+  const inlined = new Map<string, number>();
+
+  for (const each of allProps) {
+    // track number of instances of a given name.
+    inlined.set(each.name, (inlined.get(each.name) || 0) + 1);
+  }
+
+  const usedNames = new Set(inlined.keys());
+  for (const each of virtualProperties.inlined.sort((a, b) => length(a.nameOptions) - length(b.nameOptions))) {
+    const ct = inlined.get(each.name);
+    if (ct && ct > 1) {
+      // console.error(`Fixing collision on name ${each.name} #${ct} `);
+      each.name = selectName(each.nameOptions, usedNames);
+    }
+  }
+  schema.language.default.inline = 'yes';
+  return true;
+}
 
 function createVirtualParameters(operation: CommandOperation) {
   // dolauli expand body parameter
@@ -347,6 +356,16 @@ function createVirtualParameters(operation: CommandOperation) {
   operation.details.default.virtualParameters = virtualParameters;
 }
 
+function getAllPublicVirtualProperties(virtualProperties?: VirtualProperties): Array<VirtualProperty> {
+  const props = virtualProperties || {
+    owned: [],
+    inherited: [],
+    inlined: []
+  };
+
+  return values(props.owned, props.inherited, props.inlined).where(each => !each.private).toArray();
+}
+
 async function createVirtuals(state: State): Promise<PwshModel> {
   /* 
     A model class should provide inlined properties for anything in a property called properties
@@ -355,24 +374,18 @@ async function createVirtuals(state: State): Promise<PwshModel> {
  
     Individual models can change the $THRESHOLD for generate
   */
-  // dolauli this plugin is used to expand the property in an object.
-  // dolauli inline-threshold could be set in readme.md
-  // skip-for-time-being
-  // const threshold = await state.getValue('inlining-threshold', 24);
-  // const conflicts = new Array<string>();
 
-  // for (const schema of values(state.model.schemas)) {
-  //   if (schema.type === JsonType.Object) {
-  //     // did we already inline this object
-  //     // dolauli skip if inlined
-  //     if (schema.details.default.inlined) {
-  //       continue;
-  //     }
-  //     // we have an object, let's process it.
+  const threshold = await state.getValue('inlining-threshold', 24);
+  const conflicts = new Array<string>();
 
-  //     createVirtualProperties(schema, new Array<string>(), threshold, conflicts);
-  //   }
-  // }
+  for (const schema of values(state.model.schemas.objects)) {
+    // did we already inline this objecct
+    if (schema.language.default.inlined) {
+      continue;
+    }
+    // we have an object, let's process it.
+    createVirtualProperties(schema as ObjectSchema, new Array<string>(), threshold, conflicts);
+  }
   // if (length(conflicts) > 0) {
   //   // dolauli need to figure out how inline-properties is used in readme.md
   //   state.error('You have one or more circular references in your model, you must add configuration entries to specify which models won\'t be inlined.', ['inline-properties']);

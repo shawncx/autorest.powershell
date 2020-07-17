@@ -10,14 +10,20 @@ import { Model } from '../llcsharp/code-model';
 import { State } from '../llcsharp/generator';
 import { Project, NewProject } from '../llcsharp/project';
 import { PwshModel } from '../utils/PwshModel';
+import { Dictionary } from '@azure-tools/linq';
 
 const resources = `${__dirname}/../../resources`;
+
+function test(content: string, overrides: Dictionary<string>): string {
+  const a = applyOverrides(content, overrides);
+  return a;
+}
 
 export async function llcsharpV2(service: Host) {
   try {
     const project = await new NewProject(service).init();
 
-    await project.writeFiles(async (fname, content) => service.WriteFile(join(project.apifolder, fname), applyOverrides(content, project.overrides), undefined, 'source-file-csharp'));
+    await project.writeFiles(async (fname, content) => service.WriteFile(join(project.apifolder, fname), test(content, project.overrides), undefined, 'source-file-csharp'));
 
     // recursive copy resources
     await copyResources(join(resources, 'runtime', 'csharp', 'client'), async (fname, content) => service.WriteFile(join(project.runtimefolder, fname), content, undefined, 'source-file-csharp'), project.overrides);
